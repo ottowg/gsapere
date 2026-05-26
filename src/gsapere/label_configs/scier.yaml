@@ -1,0 +1,17 @@
+ner:
+    - Method
+    - Dataset
+    - Task
+
+relations:
+    symmetric:
+        - Synonym-Of
+        - Compare-With
+    non_symmetric:
+        - Part-Of
+        - Benchmark-For
+        - Used-For
+        - Evaluated-With
+        - Trained-With
+        - SubTask-Of
+        - SubClass-Of

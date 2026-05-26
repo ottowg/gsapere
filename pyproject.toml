@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gsapere"
+version = "0.1.0"
+description = "Entity and Relation Extraction on scientific text using HGERE with a span-pruning stage."
+readme = "README.md"
+requires-python = ">=3.9,<3.11"
+authors = [{name = "Wolfgang Otto"}]
+license = {text = "MIT"}
+keywords = ["nlp", "information-extraction", "entity-recognition", "relation-extraction", "scientific-text"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "torch>=2.8.0",
+    "einops>=0.8.0",
+    "setuptools>=75.6.0",
+    "tqdm>=4.67.1",
+    "wandb>=0.19.9",
+    "transformers",
+    "matplotlib>=3.9.0",
+    "scikit-learn>=1.6.0",
+    "tabulate>=0.9.0",
+    "pandas>=2.0.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "requests>=2.32.0",
+]
+
+[project.scripts]
+plot-ner-candidates = "gsapere.commands.plot_ner_candidates_by_sent_len:main"
+infer-fixed-spans = "gsapere.commands.infer_fixed_spans:cli"
+infer-pruner-augmented = "gsapere.commands.infer_pruner_augmented:cli"
+gsapere-download-dataset = "gsapere.commands.download_dataset:cli"
+gsapere-pipeline = "gsapere.commands.run_pipeline:cli"
+gsap-ere-benchmark-pipeline = "gsapere.commands.benchmark_pipeline:cli"
+gsapere-fit-rulebased-pruner = "gsapere.commands.fit_rulebased_pruner:cli"
+gsapere-train-pruner = "gsapere.commands.train_pruner:main"
+gsapere-tune-pruner = "gsapere.evaluation.threshold_analysis:cli"
+gsapere-train-hgere = "gsapere.commands.train_hgere:main"
+gsapere-generate-pruner-docs = "gsapere.documentation.generate_pruner_docs:cli"
+gsapere-analysis-ner-length-distribution = "gsapere.commands.ner_length_distribution:cli"
+gsapere-fix-gold-annos = "gsapere.commands.add_gold_annotations:cli"
+
+[project.optional-dependencies]
+dev = [
+    "lint>=1.2.1",
+    "ruff>=0.15.5",
+    "pytest>=8.4.2",
+    "twine>=6.1.0",
+]
+[tool.hatch.build.targets.wheel]
+packages = ["src/gsapere"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/gsapere/",
+    "tests/",
+    "documentation/",
+    "LICENSE",
+    "README.md",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128"}
+torchvision = { index = "pytorch-cu128"}
+torchaudio = { index = "pytorch-cu128"}
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

@@ -1,3 +1,23 @@
+# Project related
+reports/
+
+# ignore saves
+saves
+datasets_copy/
+/models/
+slurm/
+logs/
+/data/
+datasets/
+pretrained_models/
+uv.lock
+pruner_predictions/
+/pipeline/
+/scripts/
+output/
+# ML related
+wandb/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -77,6 +97,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+notebooks/
 
 # IPython
 profile_default/
@@ -159,10 +180,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# ignore saves
-saves/
-scripts/
-slurm/
-logs/
-data/
-pretrained_models/
+# PyPI token
+.pypi
+
