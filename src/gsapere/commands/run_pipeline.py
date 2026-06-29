@@ -29,16 +29,15 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gsapere.pipeline.pipeline import Pipeline
 
 # Prevent wandb from initialising during pipeline inference.
 os.environ.setdefault("WANDB_MODE", "disabled")
 
 from tqdm import tqdm
-
-from gsapere.labels import LABELS
-from gsapere.pipeline.config import PipelineConfig
-from gsapere.pipeline.pipeline import Pipeline
-from gsapere.pipeline.presets import PRESETS
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -52,7 +51,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--model",
         type=str,
         default=None,
-        help=f"Built-in preset name. Available: {sorted(PRESETS)}.",
+        help="Built-in preset name (e.g. 'gsap-ere'). Models are downloaded automatically.",
     )
     p.add_argument(
         "--input",
@@ -252,6 +251,12 @@ def _process_file(
 
 def cli() -> None:
     args = _build_parser().parse_args()
+
+    # Deferred to keep --help fast (torch/transformers load here, not at import time).
+    from gsapere.labels import LABELS
+    from gsapere.pipeline.config import PipelineConfig
+    from gsapere.pipeline.pipeline import Pipeline
+    from gsapere.pipeline.presets import PRESETS
 
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
