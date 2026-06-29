@@ -196,6 +196,19 @@ train_params:
 
 ### Full pipeline (pruner → HGERE)
 
+**Built-in preset (recommended for downstream use):**
+
+```bash
+CUDA_VISIBLE_DEVICES=0 uv run gsapere-pipeline \
+    --model gsap-ere \
+    --input docs.jsonl \
+    --output predictions.jsonl
+```
+
+All required models are downloaded automatically from the HuggingFace Hub on first use — no local config or checkpoints needed.
+
+**Custom config:**
+
 ```bash
 CUDA_VISIBLE_DEVICES=0 uv run gsapere-pipeline \
     --config configs/inference/gsap-pipeline-best.yaml \
@@ -233,6 +246,40 @@ hgere:
   pre_filter_params:
     method: threshold
     value: 0.0125
+```
+
+---
+
+## Docker API
+
+The pipeline can be served as a REST API. Build and run with Docker (requires `--gpus all`):
+
+```bash
+docker build -t gsapere-api .
+
+docker run --gpus all \
+    -v /path/to/models:/app/models \
+    -v /path/to/config.yaml:/app/config.yaml \
+    -e PIPELINE_CONFIG=/app/config.yaml \
+    -p 8000:8000 \
+    gsapere-api
+```
+
+Models and the pipeline config are mounted at runtime — the image itself contains only the code.
+
+**Endpoints:**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Liveness check |
+| `POST` | `/predict` | Run the pipeline on a batch of documents |
+
+**Example request:**
+
+```bash
+curl -X POST http://localhost:8000/predict \
+    -H "Content-Type: application/json" \
+    -d '{"documents": [{"doc_key": "doc1", "sentences": [["We", "train", "BERT", "."]]}]}'
 ```
 
 ---

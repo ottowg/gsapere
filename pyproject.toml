@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gsapere"
-version = "0.1.0"
+version = "0.2.1"
 description = "Entity and Relation Extraction on scientific text using HGERE with a span-pruning stage."
 readme = "README.md"
 requires-python = ">=3.9,<3.11"
@@ -26,7 +26,8 @@ dependencies = [
     "setuptools>=75.6.0",
     "tqdm>=4.67.1",
     "wandb>=0.19.9",
-    "transformers",
+    "transformers>=4.40.0,<5.0",
+    "huggingface_hub>=0.20.0",
     "matplotlib>=3.9.0",
     "scikit-learn>=1.6.0",
     "tabulate>=0.9.0",
@@ -34,6 +35,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "pyyaml>=6.0",
     "requests>=2.32.0",
+    "fastapi>=0.128.8",
 ]
 
 [project.scripts]
@@ -57,6 +59,7 @@ dev = [
     "ruff>=0.15.5",
     "pytest>=8.4.2",
     "twine>=6.1.0",
+    "httpx>=0.27.0",
 ]
 [tool.hatch.build.targets.wheel]
 packages = ["src/gsapere"]

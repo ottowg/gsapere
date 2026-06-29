@@ -195,22 +195,39 @@ class PrunerRunner:
         cfg = self._config
         config_class, model_class, tokenizer_class = MODEL_CLASSES[cfg.model_type]
 
-        model_path = Path(cfg.model_dir).absolute()
-        if not (model_path / "config.json").exists():
-            checkpoints = sorted(
-                [
-                    p
-                    for p in model_path.iterdir()
-                    if p.is_dir() and p.name.startswith("checkpoint-")
-                ],
-                key=lambda p: int(p.name.split("-")[-1]),
-            )
-            if checkpoints:
-                model_path = checkpoints[-1]
-                logger.info("Pruner: using checkpoint %s", model_path)
+        local = Path(cfg.model_dir)
+        training_args_path: Path | None
+        if local.exists():
+            model_path = local.absolute()
+            if not (model_path / "config.json").exists():
+                checkpoints = sorted(
+                    [
+                        p
+                        for p in model_path.iterdir()
+                        if p.is_dir() and p.name.startswith("checkpoint-")
+                    ],
+                    key=lambda p: int(p.name.split("-")[-1]),
+                )
+                if checkpoints:
+                    model_path = checkpoints[-1]
+                    logger.info("Pruner: using checkpoint %s", model_path)
+            model_dir_str = str(model_path)
+            training_args_path = model_path / "training_args.bin"
+        else:
+            logger.info("Pruner: loading from HuggingFace Hub: %s", cfg.model_dir)
+            model_dir_str = cfg.model_dir
+            try:
+                from huggingface_hub import hf_hub_download
+
+                training_args_path = Path(
+                    hf_hub_download(repo_id=cfg.model_dir, filename="training_args.bin")
+                )
+                logger.info("Pruner: downloaded training_args.bin from HF hub")
+            except Exception:
+                training_args_path = None
 
         with suppress_transformers_warnings():
-            bert_config = config_class.from_pretrained(str(model_path))
+            bert_config = config_class.from_pretrained(model_dir_str)
         with suppress_transformers_warnings():
             self._tokenizer = tokenizer_class.from_pretrained(
                 cfg.base_model_name_or_path,
@@ -220,8 +237,7 @@ class PrunerRunner:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._device = device
 
-        training_args_path = model_path / "training_args.bin"
-        if training_args_path.exists():
+        if training_args_path is not None and training_args_path.exists():
             model_args = torch.load(
                 training_args_path, map_location="cpu", weights_only=False
             )
@@ -240,17 +256,16 @@ class PrunerRunner:
                 onedropout=False,
             )
             logger.warning(
-                "Pruner: training_args.bin not found at %s, using defaults",
-                model_path,
+                "Pruner: training_args.bin not found, using defaults",
             )
         self._model_args = model_args
         with suppress_transformers_warnings():
             self._model = model_class.from_pretrained(
-                str(model_path), config=bert_config, args=model_args
+                model_dir_str, config=bert_config, args=model_args
             )
         self._model.to(device)
         self._model.eval()
-        logger.info("Pruner model loaded from %s", model_path)
+        logger.info("Pruner model loaded from %s", model_dir_str)
 
     def _make_args(self, n_gpu: int) -> object:
         cfg = self._config

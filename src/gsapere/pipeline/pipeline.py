@@ -43,6 +43,32 @@ class Pipeline:
         config = PipelineConfig.from_yaml(path)
         return cls(config)
 
+    @classmethod
+    def from_preset(cls, name: str) -> "Pipeline":
+        """Initialise the pipeline from a built-in preset.
+
+        Models are downloaded from HuggingFace Hub on first use and cached
+        locally — no local files or config needed.
+
+        Available presets:
+            ``"gsap-ere"`` — GSAP-ERE fine-grained ERE on ML papers.
+
+        Args:
+            name: Preset name (e.g. ``"gsap-ere"``).
+
+        Returns:
+            Fully initialised Pipeline with both models loaded.
+
+        Raises:
+            KeyError: If the preset name is not recognised.
+        """
+        from gsapere.pipeline.presets import PRESETS
+
+        if name not in PRESETS:
+            available = ", ".join(sorted(PRESETS))
+            raise KeyError(f"Unknown preset {name!r}. Available: {available}")
+        return cls(PRESETS[name])
+
     def process_document(self, doc: dict[str, Any]) -> dict[str, Any]:
         """Process a single document.
 

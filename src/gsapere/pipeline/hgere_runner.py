@@ -70,16 +70,32 @@ class HGERERunner:
         cfg = self._config
         config_class, model_class, tokenizer_class = MODEL_CLASSES[cfg.model_type]
 
-        model_path = Path(cfg.model_dir).absolute()
-        if not (model_path / "config.json").exists():
-            resolved = resolve_checkpoint(model_path)
-            if resolved is not None:
-                model_path = resolved
-                logger.info("HGERE: using checkpoint %s", model_path)
+        local = Path(cfg.model_dir)
+        training_args_path: Path | None
+        if local.exists():
+            model_path = local.absolute()
+            if not (model_path / "config.json").exists():
+                resolved = resolve_checkpoint(model_path)
+                if resolved is not None:
+                    model_path = resolved
+                    logger.info("HGERE: using checkpoint %s", model_path)
+            model_dir_str = str(model_path)
+            training_args_path = model_path / "training_args.bin"
+        else:
+            logger.info("HGERE: loading from HuggingFace Hub: %s", cfg.model_dir)
+            model_dir_str = cfg.model_dir
+            try:
+                from huggingface_hub import hf_hub_download
+
+                training_args_path = Path(
+                    hf_hub_download(repo_id=cfg.model_dir, filename="training_args.bin")
+                )
+                logger.info("HGERE: downloaded training_args.bin from HF hub")
+            except Exception:
+                training_args_path = None
 
         # Load training_args.bin to recover architecture parameters.
-        training_args_path = model_path / "training_args.bin"
-        if training_args_path.exists():
+        if training_args_path is not None and training_args_path.exists():
             model_args = torch.load(
                 training_args_path, map_location="cpu", weights_only=False
             )
@@ -98,7 +114,7 @@ class HGERERunner:
             model_args = None
             logger.info(
                 "HGERE: training_args.bin not found at %s, using pipeline config for arch params",
-                model_path,
+                model_dir_str,
             )
 
         def _arch(param: str) -> Any:
@@ -114,7 +130,7 @@ class HGERERunner:
 
         with suppress_transformers_warnings():
             bert_config = config_class.from_pretrained(
-                str(model_path), num_labels=num_rel_labels
+                model_dir_str, num_labels=num_rel_labels
             )
         bert_config.max_seq_length = cfg.max_seq_length
         # For multi-head checkpoints, bert_config already has dataset_heads from
@@ -152,12 +168,12 @@ class HGERERunner:
         )
         with suppress_transformers_warnings():
             self._model = model_class.from_pretrained(
-                str(model_path), config=bert_config, args=infer_args
+                model_dir_str, config=bert_config, args=infer_args
             )
         self._model.to(device)
         self._model.eval()
         self._bert_config = bert_config
-        logger.info("HGERE model loaded from %s", model_path)
+        logger.info("HGERE model loaded from %s", model_dir_str)
         if cfg.pre_filter_params is not None:
             logger.info(
                 "HGERE pre_filter_params: %s", cfg.pre_filter_params.model_dump()

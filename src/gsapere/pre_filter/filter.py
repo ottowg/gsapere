@@ -105,6 +105,15 @@ class RuleBasedPruner:
 
     @classmethod
     def load(cls, path: str) -> "RuleBasedPruner":
+        if path.startswith("hf://"):
+            # hf://owner/repo/filename  →  hf_hub_download(repo_id, filename)
+            from huggingface_hub import hf_hub_download
+
+            _, rest = path.split("hf://", 1)
+            parts = rest.split("/", 2)
+            repo_id = f"{parts[0]}/{parts[1]}"
+            filename = parts[2]
+            path = hf_hub_download(repo_id=repo_id, filename=filename)
         with open(Path(path), "r") as f:
             raw = json.load(f)
         # Backward-compatible: old format is a plain list of patterns.

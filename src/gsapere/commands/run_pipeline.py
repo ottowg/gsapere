@@ -38,6 +38,7 @@ from tqdm import tqdm
 from gsapere.labels import LABELS
 from gsapere.pipeline.config import PipelineConfig
 from gsapere.pipeline.pipeline import Pipeline
+from gsapere.pipeline.presets import PRESETS
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -45,7 +46,13 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Run the two-stage HGERE pipeline on JSON/JSONL files."
     )
     p.add_argument(
-        "--config", type=str, required=True, help="Path to pipeline YAML config."
+        "--config", type=str, default=None, help="Path to pipeline YAML config."
+    )
+    p.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help=f"Built-in preset name. Available: {sorted(PRESETS)}.",
     )
     p.add_argument(
         "--input",
@@ -267,8 +274,30 @@ def cli() -> None:
         logger.error("No *.json or *.jsonl files found in %s", input_path)
         sys.exit(1)
 
-    logger.info("Loading pipeline config from %s", args.config)
-    base_config = PipelineConfig.from_yaml(args.config)
+    if args.config and args.model:
+        logger.error("Use either --config or --model, not both.")
+        sys.exit(1)
+    if not args.config and not args.model:
+        logger.error(
+            "Provide either --config <path> or --model <preset>. "
+            "Available presets: %s.",
+            sorted(PRESETS),
+        )
+        sys.exit(1)
+
+    if args.model:
+        if args.model not in PRESETS:
+            logger.error(
+                "Unknown model preset %r. Available presets: %s.",
+                args.model,
+                sorted(PRESETS),
+            )
+            sys.exit(1)
+        logger.info("Using built-in preset %r", args.model)
+        base_config = PRESETS[args.model]
+    else:
+        logger.info("Loading pipeline config from %s", args.config)
+        base_config = PipelineConfig.from_yaml(args.config)
 
     unknown = [ls for ls in base_config.label_sets if ls not in LABELS]
     if unknown:
